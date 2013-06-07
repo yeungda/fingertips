@@ -65,21 +65,35 @@ document.addEventListener( "DOMContentLoaded",function() {
 
     function finger() {
       var s = {
+        fingerId: null,
         fingerDown: false,
         lastPosition: null
       }
       e.addEventListener('touchstart', function(e) {
-        s.fingerDown = true
+        if (!s.fingerDown) {
+          s.fingerDown = true
+          s.fingerId = e.targetTouches[0].identifier
+        }
         console.log('fingerdown')
       })
       e.addEventListener('touchend', function(e) {
-        s.fingerDown = false
-        s.lastPosition = null
-        console.log('fingerup')
+        if (!findTouchById(e.targetTouches, s.fingerId)) {
+          s.fingerDown = false
+          s.lastPosition = null
+          s.fingerId = null
+          console.log('fingerup')
+        }
       })
+      function findTouchById(touches, id) {
+        for (var i = 0; i < touches.length; i++ ) {
+          if (touches[i].identifier === id) {
+            return touches[i]
+          }
+        }
+      }
       e.addEventListener('touchmove', function(e) {
         if (s.fingerDown) {
-          var t = e.targetTouches[0]
+          var t = findTouchById(e.targetTouches, s.fingerId)
           var p = Point(t.clientX, t.clientY)
           if (s.lastPosition) {
             var l = s.lastPosition;
