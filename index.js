@@ -1,7 +1,9 @@
 document.addEventListener( "DOMContentLoaded",function() {
-  document.body.addEventListener('touchmove', function(e) {
+  function preventDefault(e) {
     e.preventDefault();
-  });
+  }
+  document.body.addEventListener('touchmove', preventDefault)
+  document.body.addEventListener('mousewheel', preventDefault)
 
   function Point(x,y) {
     return {
@@ -27,6 +29,9 @@ document.addEventListener( "DOMContentLoaded",function() {
     e.addEventListener('mouseup', function(e) {
       state.mouseDown = false
       state.lastPosition = null
+    })
+    e.addEventListener('mousewheel', function(e) {
+      console.log(e)
     })
     e.addEventListener('mousemove', function(e) {
       state.mouseIn = true

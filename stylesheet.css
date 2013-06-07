@@ -16,8 +16,8 @@ body {
 
 #box {
   width: 100%;
-  height: 90%;
-  background: red;
+  height: 100%;
+  background: pink;
   display: block;
   content: ' ';
   padding: 0;
@@ -30,10 +30,11 @@ body {
   left: 0;
   height: 44px;
   width: 44px;
-  background-color: black;
+  background-color: white;
 }
 
 #x, #y, #s {
+  display: none;
   float: left;
   width: 30%;
 }
