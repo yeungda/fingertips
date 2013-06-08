@@ -63,49 +63,91 @@ document.addEventListener( "DOMContentLoaded",function() {
       })
     }
 
+    function diffTouches(a,b) {
+      console.log('a')
+      console.log(a)
+      console.log('b')
+      console.log(b)
+      return {
+        x: b[0].clientX - a[0].clientX,
+        y: b[0].clientY - a[0].clientY
+      }
+    }
+
+    (function() {
+      function assertEqual(a,b) {
+        if (a !== b) {
+          throw a + ' not eq ' + b
+        }
+      }
+      function test(name, t) {
+        console.log(name)
+        t()
+      }
+
+      test('single finger no move', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 0, clientY: 0}], 
+          [{identifier: 1, clientX: 0, clientY: 0}])
+        assertEqual(d.x, 0)
+        assertEqual(d.y, 0)
+      })
+      test('single finger move right', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 0, clientY: 0}], 
+          [{identifier: 1, clientX: 1, clientY: 0}])
+        assertEqual(d.x, 1)
+      })
+      test('single finger move left', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 1, clientY: 0}], 
+          [{identifier: 1, clientX: 0, clientY: 0}])
+        assertEqual(d.x, -1)
+      })
+      test('single finger move up', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 0, clientY: 1}], 
+          [{identifier: 1, clientX: 0, clientY: 0}])
+        assertEqual(d.y, -1)
+      })
+      test('single finger move down', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 0, clientY: 0}], 
+          [{identifier: 1, clientX: 0, clientY: 1}])
+        assertEqual(d.y, 1)
+      })
+
+      test('single finger move ignoring extra finger', function() {
+        var d = diffTouches(
+          [{identifier: 1, clientX: 0, clientY: 0}], 
+          [{identifier: 1, clientX: 1, clientY: 0}, {identifier: 2, clientX: 10, clientY: 10}])
+        assertEqual(d.x, 1)
+        assertEqual(d.y, 0)
+      })
+    })()
+
     function finger() {
       var s = {
-        fingerId: null,
-        fingerDown: false,
-        lastPosition: null
+        touches: null
       }
-      e.addEventListener('touchstart', function(e) {
-        if (!s.fingerDown) {
-          s.fingerDown = true
-          s.fingerId = e.targetTouches[0].identifier
+      function toTouches(eTouches) {
+        var a = []
+        for (var i = 0; i < eTouches.length; i++) {
+          var eT = eTouches[i]
+          a.push({
+            identifier: eT.identifier,
+            clientX: eT.clientX,
+            clientY: eT.clientY
+          })
         }
-        console.log('fingerdown')
-      })
-      e.addEventListener('touchend', function(e) {
-        if (!findTouchById(e.targetTouches, s.fingerId)) {
-          s.fingerDown = false
-          s.lastPosition = null
-          s.fingerId = null
-          console.log('fingerup')
-        }
-      })
-      function findTouchById(touches, id) {
-        for (var i = 0; i < touches.length; i++ ) {
-          if (touches[i].identifier === id) {
-            return touches[i]
-          }
-        }
+        return a
       }
       e.addEventListener('touchmove', function(e) {
-        if (s.fingerDown) {
-          var t = findTouchById(e.targetTouches, s.fingerId)
-          var p = Point(t.clientX, t.clientY)
-          if (s.lastPosition) {
-            var l = s.lastPosition;
-            var x = p.x - l.x;
-            var y = p.y - l.y;
-            callback({
-              x: x,
-              y: y
-            })
-          }
-          s.lastPosition = p
+        var t = toTouches(e.targetTouches)
+        if (s.touches) {
+          callback(diffTouches(s.touches, t))
         }
+        s.touches = t
       })
     }
 
@@ -120,6 +162,7 @@ document.addEventListener( "DOMContentLoaded",function() {
   var box = document.getElementById('box');
   var pointPosition = Point(200,200)
   listen(box, function(d) {
+    console.log(d)
     pointPosition = transform(pointPosition, d)
   })
 
