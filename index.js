@@ -64,13 +64,65 @@ document.addEventListener( "DOMContentLoaded",function() {
     }
 
     function diffTouches(a,b) {
-      console.log('a')
-      console.log(a)
-      console.log('b')
-      console.log(b)
-      return {
-        x: b[0].clientX - a[0].clientX,
-        y: b[0].clientY - a[0].clientY
+      var moves = {}
+      for (var i = 0; i < b.length; i++) {
+        var touch = b[i]
+        if (moves[touch.id] === undefined) {
+          moves[touch.id] = []
+        }
+        moves[touch.id].push(touch)
+      }
+      for (var i = 0; i < a.length; i++) {
+        var touch = a[i]
+        if (moves[touch.id] === undefined) {
+          moves[touch.id] = []
+        }
+        moves[touch.id].push(touch)
+      }
+      var diffs = Object.keys(moves).reduce(function(d, id) {
+        var move = moves[id]
+        if (move.length === 2) {
+          d.push({
+            x: move[0].x - move[1].x,
+            y: move[0].y - move[1].y
+          })
+        }
+        return d
+
+      },[])
+
+      if (diffs.length === 0) {
+        return {x: 0, y: 0}
+      } else if (diffs.length === 1) {
+        return diffs[0]
+      } else if (diffs.length === 2) {
+        var firstMoveX = diffs[0].x
+        var secondMoveX = diffs[1].x
+        var firstMoveY = diffs[0].y
+        var secondMoveY = diffs[1].y
+
+        var moveX, moveY;
+        if (firstMoveX > 0 && secondMoveX > 0) {
+          moveX = Math.min(firstMoveX, secondMoveX)
+        } else if (firstMoveX < 0 && secondMoveX < 0) {
+          moveX = Math.max(firstMoveX, secondMoveX)
+        } else {
+          moveX = 0
+        }
+
+        if (firstMoveY > 0 && secondMoveY > 0) {
+          moveY = Math.min(firstMoveY, secondMoveY)
+        } else if (firstMoveY < 0 && secondMoveY < 0) {
+          moveY = Math.max(firstMoveY, secondMoveY)
+        } else {
+          moveY = 0
+        }
+        return {
+          x: moveX,
+          y: moveY
+        }
+      } else {
+        throw 'unsupported touch length: ' + a.length
       }
     }
 
@@ -80,50 +132,148 @@ document.addEventListener( "DOMContentLoaded",function() {
           throw a + ' not eq ' + b
         }
       }
-      function test(name, t) {
+      function diffTest(name, g, expected) {
+        var a = [], b = [];
+
+        for (var y = 0; y < g.length; y++) {
+          var row = g[y]
+          for (var x = 0; x < row.length; x++) {
+            var cell = row[x]
+            for (var c = 0; c < cell.length; c++) {
+              var touch = cell[c]
+              var input = ((touch < 0) ? a : b)
+              input.push({id: Math.abs(touch), x: x, y: y})
+            }
+          }
+        }
         console.log(name)
-        t()
+        var d = diffTouches(a,b)
+        if (expected.x) {
+          assertEqual(d.x, expected.x)
+        }
+        if (expected.y) {
+          assertEqual(d.y, expected.y)
+        }
       }
 
-      test('single finger no move', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 0, clientY: 0}], 
-          [{identifier: 1, clientX: 0, clientY: 0}])
-        assertEqual(d.x, 0)
-        assertEqual(d.y, 0)
-      })
-      test('single finger move right', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 0, clientY: 0}], 
-          [{identifier: 1, clientX: 1, clientY: 0}])
-        assertEqual(d.x, 1)
-      })
-      test('single finger move left', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 1, clientY: 0}], 
-          [{identifier: 1, clientX: 0, clientY: 0}])
-        assertEqual(d.x, -1)
-      })
-      test('single finger move up', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 0, clientY: 1}], 
-          [{identifier: 1, clientX: 0, clientY: 0}])
-        assertEqual(d.y, -1)
-      })
-      test('single finger move down', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 0, clientY: 0}], 
-          [{identifier: 1, clientX: 0, clientY: 1}])
-        assertEqual(d.y, 1)
-      })
+      diffTest('single finger no move', 
+               [[[-1,1]]],
+               {x: 0, y: 0})
+      diffTest('single finger move right', 
+               [[[-1],[1]]],
+               {x: 1})
+      diffTest('single finger move left', 
+                [[[1],[-1]]],
+                {x: -1})
+      diffTest('single finger move up', 
+               [[[ 1]],
+                [[-1]]],
+               {y: -1})
+      diffTest('single finger move down',
+               [[[-1]],
+                [[ 1]]],
+               {y: 1})
 
-      test('single finger move ignoring extra finger', function() {
-        var d = diffTouches(
-          [{identifier: 1, clientX: 0, clientY: 0}], 
-          [{identifier: 1, clientX: 1, clientY: 0}, {identifier: 2, clientX: 10, clientY: 10}])
-        assertEqual(d.x, 1)
-        assertEqual(d.y, 0)
-      })
+      diffTest('single finger move right, ignore second finger coming in', 
+               [[[-1],[1]],
+                [[ 2],[ ]]],
+               {x: 1, y: 0})
+
+      diffTest('two fingers no move', 
+               [[[-1,1],[-2,2]]],
+          {x: 0, y: 0})
+
+      diffTest('two fingers both move right at same distance', 
+               [[[-1],[1],[-2],[2]]],
+               {x: 1, y: 0})
+
+      diffTest('two fingers both move right, left moves further', 
+               [[[-1],[],[1],[-2],[2]]],
+               {x: 1, y: 0})
+
+      diffTest('two fingers both move right, right moves further', 
+               [[[-1],[1],[-2],[],[2]]],
+               {x: 1, y: 0})
+
+      diffTest('two fingers both move left at same distance', 
+               [[[1],[-1],[2],[-2]]],
+               {x: -1, y: 0})
+
+      diffTest('two fingers both move left, left moves further', 
+               [[[1],[],[-1],[2],[-2]]],
+               {x: -1, y: 0})
+
+      diffTest('two fingers both move left, right moves further', 
+               [[[1],[-1],[2],[],[-2]]],
+               {x: -1, y: 0})
+
+      diffTest('two fingers both move down at same distance', 
+               [[[-1]],
+                [[ 1]],
+                [[-2]],
+                [[ 2]]],
+               {x: 0, y: 1})
+
+      diffTest('two fingers both move down, top moves further', 
+               [[[-1]],
+                [[  ]],
+                [[ 1]],
+                [[-2]],
+                [[ 2]]],
+               {x: 0, y: 1})
+
+      diffTest('two fingers both move down, bottom moves further', 
+               [[[-1]],
+                [[ 1]],
+                [[-2]],
+                [[  ]],
+                [[ 2]]],
+               {x: 0, y: 1})
+
+      diffTest('two fingers both move up at same distance', 
+               [[[ 1]],
+                [[-1]],
+                [[ 2]],
+                [[-2]]],
+               {x: 0, y: -1})
+
+      diffTest('two fingers both move up, top moves further', 
+               [[[ 1]],
+                [[  ]],
+                [[-1]],
+                [[ 2]],
+                [[-2]]],
+               {x: 0, y: -1})
+
+      diffTest('two fingers both move up, bottom moves further', 
+               [[[ 1]],
+                [[-1]],
+                [[ 2]],
+                [[  ]],
+                [[-2]]],
+               {x: 0, y: -1})
+
+      diffTest('two fingers move toward each left and right',
+               [[[-1],[1],[2],[-2]]],
+               {x: 0, y: 0})
+      diffTest('two fingers move apart from each other left and right',
+               [[[1],[-1],[-2],[2]]],
+               {x: 0, y: 0})
+      diffTest('two fingers move toward each up and down',
+               [[[-1]],
+                [[ 1]],
+                [[ 2]],
+                [[-2]]],
+               {x: 0, y: 0})
+      diffTest('two fingers move apart from each other up and down',
+               [[[ 1]],
+                [[-1]],
+                [[-2]],
+                [[ 2]]],
+               {x: 0, y: 0})
+      diffTest('two fingers to one finger, no movement',
+               [[[1,-1, -2]]],
+               {x: 0, y: 0})
     })()
 
     function finger() {
@@ -135,9 +285,9 @@ document.addEventListener( "DOMContentLoaded",function() {
         for (var i = 0; i < eTouches.length; i++) {
           var eT = eTouches[i]
           a.push({
-            identifier: eT.identifier,
-            clientX: eT.clientX,
-            clientY: eT.clientY
+            id: eT.identifier,
+            x: eT.clientX,
+            y: eT.clientY
           })
         }
         return a
