@@ -43,7 +43,7 @@ document.addEventListener( "DOMContentLoaded",function() {
         s.lastPosition = null
       })
       e.addEventListener('mousewheel', function(e) {
-        console.log(e)
+        //console.log(e)
       })
       e.addEventListener('mousemove', function(e) {
         s.mouseIn = true
@@ -55,7 +55,9 @@ document.addEventListener( "DOMContentLoaded",function() {
             var y = p.y - l.y;
             callback({
               x: x,
-              y: y
+              y: y,
+              w: 0,
+              h: 0
             })
           }
           s.lastPosition = p;
@@ -88,13 +90,14 @@ document.addEventListener( "DOMContentLoaded",function() {
           })
         }
         return d
-
       },[])
 
+      var diff = {x: 0, y: 0, w: 0, h: 0}
       if (diffs.length === 0) {
-        return {x: 0, y: 0}
+        // no change
       } else if (diffs.length === 1) {
-        return diffs[0]
+        diff.x = diffs[0].x
+        diff.y = diffs[0].y
       } else if (diffs.length === 2) {
         var firstMoveX = diffs[0].x
         var secondMoveX = diffs[1].x
@@ -117,13 +120,25 @@ document.addEventListener( "DOMContentLoaded",function() {
         } else {
           moveY = 0
         }
-        return {
-          x: moveX,
-          y: moveY
-        }
+        diff.x = moveX
+        diff.y = moveY
+
+
+        var dimensions = [
+         {w: Math.abs(a[0].x - a[1].x), 
+          h:Math.abs(a[0].y - a[1].y)},
+         {w: Math.abs(b[0].x - b[1].x), 
+          h:Math.abs(b[0].y - b[1].y)}
+        ]
+        var distanceXChange = dimensions[1].w - dimensions[0].w
+        var distanceYChange = dimensions[1].h - dimensions[0].h
+        
+        diff.w = distanceXChange
+        diff.h = distanceYChange
       } else {
         throw 'unsupported touch length: ' + a.length
       }
+      return diff
     }
 
     (function() {
@@ -146,13 +161,10 @@ document.addEventListener( "DOMContentLoaded",function() {
             }
           }
         }
-        console.log(name)
+        console.log("Test: " + name)
         var d = diffTouches(a,b)
-        if (expected.x) {
-          assertEqual(d.x, expected.x)
-        }
-        if (expected.y) {
-          assertEqual(d.y, expected.y)
+        for (var k in expected) {
+          assertEqual(d[k], expected[k])
         }
       }
 
@@ -271,9 +283,33 @@ document.addEventListener( "DOMContentLoaded",function() {
                 [[-2]],
                 [[ 2]]],
                {x: 0, y: 0})
+
       diffTest('two fingers to one finger, no movement',
                [[[1,-1, -2]]],
                {x: 0, y: 0})
+
+      diffTest('two fingers the left is still, the right moves left',
+               [[[-1, 1],[2],[-2]]],
+               {w: -1})
+      diffTest('two fingers the left is still, the right moves right',
+               [[[1, -1],[-2],[2]]],
+               {w: 1})
+      diffTest('two fingers the left moves right, the right is still',
+               [[[-1],[1],[-2,2]]],
+               {w: -1})
+      diffTest('two fingers the left moves left, the right is still',
+               [[[1],[-1],[-2,2]]],
+               {w: 1})
+      diffTest('two fingers the top is still, the bottom moves up',
+               [[[-1, 1]],
+                [[    2]],
+                [[   -2]]],
+               {h: -1})
+      diffTest('two fingers the top is still, the bottom moves down',
+               [[[-1, 1]],
+                [[   -2]],
+                [[    2]]],
+               {h: 1})
     })()
 
     function finger() {
@@ -311,16 +347,19 @@ document.addEventListener( "DOMContentLoaded",function() {
 
   var box = document.getElementById('box');
   var pointPosition = Point(200,200)
+  var pointHeight = 44;
+  var pointWidth = 44;
   listen(box, function(d) {
-    console.log(d)
     pointPosition = transform(pointPosition, d)
+    console.log('w:' + d.w + ',h:' + d.h)
+    pointWidth = Math.min(Math.max(pointWidth + d.w, 1), 88)
+    pointHeight = Math.min(Math.max(pointHeight + d.h, 1), 88)
+    console.log(pointWidth)
   })
 
   var point = document.getElementById('point')
-  var pointHeight = 44;
-  var pointWidth = 44;
   function render() {
-    point.setAttribute('style', 'top: ' + (pointPosition.y - (pointHeight / 2)) + 'px; left: ' + (pointPosition.x - (pointWidth / 2)) + 'px;')
+    point.setAttribute('style', 'top: ' + (pointPosition.y - (pointHeight / 2)) + 'px; left: ' + (pointPosition.x - (pointWidth / 2)) + 'px; width: ' + pointWidth + 'px; height: ' + pointHeight + 'px; border-radius: ' + (pointWidth / 2) + 'px;')
     window.requestAnimFrame(render)
   }
   render()
