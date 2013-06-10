@@ -358,6 +358,8 @@ document.addEventListener( "DOMContentLoaded",function() {
 
 
   var box = document.getElementById('box');
+  box.width = box.clientWidth
+  box.height = box.clientHeight
   var transform = transformWithin(box.clientWidth, box.clientHeight)
   var pointPosition = Point(200,200)
   var pointHeight = 44;
@@ -370,9 +372,13 @@ document.addEventListener( "DOMContentLoaded",function() {
     console.log(pointWidth)
   })
 
-  var point = document.getElementById('point')
   function render() {
-    point.setAttribute('style', 'top: ' + (pointPosition.y - (pointHeight / 2)) + 'px; left: ' + (pointPosition.x - (pointWidth / 2)) + 'px; width: ' + pointWidth + 'px; height: ' + pointHeight + 'px; border-radius: ' + (pointWidth / 2) + 'px;')
+    var ctx = box.getContext("2d");
+    ctx.clearRect(0,0,box.clientWidth, box.clientHeight)
+    ctx.fillStyle="white";
+    var pointTop = pointPosition.y - (pointHeight / 2)
+    var pointLeft = pointPosition.x - (pointWidth / 2)
+    ctx.fillRect(pointLeft, pointTop, pointWidth, pointHeight);
     window.requestAnimFrame(render)
   }
   render()

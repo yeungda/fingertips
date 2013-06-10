@@ -4,6 +4,8 @@ body, html {
   width: 100%;
   padding: 0;
   margin: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
@@ -19,33 +21,6 @@ body {
   height: 100%;
   background: pink;
   display: block;
-  content: ' ';
   padding: 0;
-  position: relative;
 }
 
-#point {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 44px;
-  width: 44px;
-  background-color: white;
-  border-radius: 22px;
-}
-
-#x, #y, #s {
-  display: none;
-  float: left;
-  width: 30%;
-}
-
-#x :before {
-  content: 'x'
-}
-#y :before {
-  content: 'y'
-}
-#s :before {
-  content: 'scale'
-}
