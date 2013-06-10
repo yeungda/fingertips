@@ -373,10 +373,10 @@ document.addEventListener( "DOMContentLoaded",function() {
   function render() {
     ctx.clearRect(previous.x,previous.y,previous.w, previous.h)
     ctx.fillRect(next.x, next.y, next.w, next.h);
-    previous.x = next.x
-    previous.y = next.y
-    previous.w = next.w + 1
-    previous.h = next.h + 1
+    previous.x = next.x - 1
+    previous.y = next.y - 1
+    previous.w = next.w + 2
+    previous.h = next.h + 2
     window.requestAnimFrame(render)
   }
   render()
