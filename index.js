@@ -56,8 +56,7 @@ document.addEventListener( "DOMContentLoaded",function() {
             callback({
               x: x,
               y: y,
-              w: 0,
-              h: 0
+              d: 0
             })
           }
           s.lastPosition = p;
@@ -92,7 +91,7 @@ document.addEventListener( "DOMContentLoaded",function() {
         return d
       },[])
 
-      var diff = {x: 0, y: 0, w: 0, h: 0}
+      var diff = {x: 0, y: 0, d: 0}
       if (diffs.length === 0) {
         // no change
       } else if (diffs.length === 1) {
@@ -130,11 +129,12 @@ document.addEventListener( "DOMContentLoaded",function() {
          {w: Math.abs(b[0].x - b[1].x), 
           h:Math.abs(b[0].y - b[1].y)}
         ]
-        var distanceXChange = dimensions[1].w - dimensions[0].w
-        var distanceYChange = dimensions[1].h - dimensions[0].h
+        function square(x) { return x * x }
+        var distances = dimensions.map(function(x) {
+          return Math.sqrt(square(x.w) + square(x.h))
+        })
         
-        diff.w = distanceXChange
-        diff.h = distanceYChange
+        diff.d = distances[1] - distances[0]
       } else {
         throw 'unsupported touch length: ' + a.length
       }
@@ -290,26 +290,31 @@ document.addEventListener( "DOMContentLoaded",function() {
 
       diffTest('two fingers the left is still, the right moves left',
                [[[-1, 1],[2],[-2]]],
-               {w: -1})
+               {d: -1})
       diffTest('two fingers the left is still, the right moves right',
                [[[1, -1],[-2],[2]]],
-               {w: 1})
+               {d: 1})
       diffTest('two fingers the left moves right, the right is still',
                [[[-1],[1],[-2,2]]],
-               {w: -1})
+               {d: -1})
       diffTest('two fingers the left moves left, the right is still',
                [[[1],[-1],[-2,2]]],
-               {w: 1})
+               {d: 1})
       diffTest('two fingers the top is still, the bottom moves up',
                [[[-1, 1]],
                 [[    2]],
                 [[   -2]]],
-               {h: -1})
+               {d: -1})
       diffTest('two fingers the top is still, the bottom moves down',
                [[[-1, 1]],
                 [[   -2]],
                 [[    2]]],
-               {h: 1})
+               {d: 1})
+      diffTest('two fingers the top is still, the bottom moves down and right',
+               [[[-1, 1],[  ],[ ]],
+                [[     ],[-2],[ ]],
+                [[     ],[  ],[2]]],
+               {d: Math.sqrt(2)})
     })()
 
     function finger() {
@@ -351,9 +356,9 @@ document.addEventListener( "DOMContentLoaded",function() {
   var pointWidth = 44;
   listen(box, function(d) {
     pointPosition = transform(pointPosition, d)
-    console.log('w:' + d.w + ',h:' + d.h)
-    pointWidth = Math.min(Math.max(pointWidth + d.w, 1), 88)
-    pointHeight = Math.min(Math.max(pointHeight + d.h, 1), 88)
+    console.log('d:' + d.d)
+    pointWidth = Math.min(Math.max(pointWidth + d.d, 11), 44 * 4)
+    pointHeight = Math.min(Math.max(pointHeight + d.d, 11), 44 * 4)
     console.log(pointWidth)
   })
 
