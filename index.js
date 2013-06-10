@@ -43,7 +43,11 @@ document.addEventListener( "DOMContentLoaded",function() {
         s.lastPosition = null
       })
       e.addEventListener('mousewheel', function(e) {
-        //console.log(e)
+        callback({
+          x: 0,
+          y: 0,
+          d: (e.wheelDeltaY / 40) * -1
+        })
       })
       e.addEventListener('mousemove', function(e) {
         s.mouseIn = true
@@ -350,35 +354,29 @@ document.addEventListener( "DOMContentLoaded",function() {
     return Math.min(Math.max(x, min), max)
   }
 
-  function transformWithin(xMax, yMax) {
-    return function(p,d) {
-      return Point(within(p.x + d.x, 0, xMax), within(p.y + d.y, 0, yMax))
-    }
-  }
-
-
   var box = document.getElementById('box');
   box.width = box.clientWidth
   box.height = box.clientHeight
-  var transform = transformWithin(box.clientWidth, box.clientHeight)
-  var pointPosition = Point(200,200)
-  var pointHeight = 44;
-  var pointWidth = 44;
+
+  var next = {x:200,y:200,w:44,h:44};
+  var previous = {x:0,y:0,w:0,h:0};
+
   listen(box, function(d) {
-    pointPosition = transform(pointPosition, d)
-    console.log('d:' + d.d)
-    pointWidth = within(pointWidth + d.d, 11, 44 * 4)
-    pointHeight = within(pointHeight + d.d, 11, 44 * 4)
-    console.log(pointWidth)
+    next.w = within(next.w + d.d, 11, 44 * 4)
+    next.h = within(next.h + d.d, 11, 44 * 4)
+    next.x = within(next.x + d.x, 0, box.width)
+    next.y = within(next.y + d.y, 0, box.height)
   })
 
+  var ctx = box.getContext("2d");
+  ctx.fillStyle="white";
   function render() {
-    var ctx = box.getContext("2d");
-    ctx.clearRect(0,0,box.clientWidth, box.clientHeight)
-    ctx.fillStyle="white";
-    var pointTop = pointPosition.y - (pointHeight / 2)
-    var pointLeft = pointPosition.x - (pointWidth / 2)
-    ctx.fillRect(pointLeft, pointTop, pointWidth, pointHeight);
+    ctx.clearRect(previous.x,previous.y,previous.w, previous.h)
+    ctx.fillRect(next.x, next.y, next.w, next.h);
+    previous.x = next.x
+    previous.y = next.y
+    previous.w = next.w + 1
+    previous.h = next.h + 1
     window.requestAnimFrame(render)
   }
   render()
