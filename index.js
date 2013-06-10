@@ -346,19 +346,27 @@ document.addEventListener( "DOMContentLoaded",function() {
     finger()
   }
 
-  function transform(p,d) {
-    return Point(p.x + d.x, p.y + d.y)
+  function within(x, min, max) {
+    return Math.min(Math.max(x, min), max)
   }
 
+  function transformWithin(xMax, yMax) {
+    return function(p,d) {
+      return Point(within(p.x + d.x, 0, xMax), within(p.y + d.y, 0, yMax))
+    }
+  }
+
+
   var box = document.getElementById('box');
+  var transform = transformWithin(box.clientWidth, box.clientHeight)
   var pointPosition = Point(200,200)
   var pointHeight = 44;
   var pointWidth = 44;
   listen(box, function(d) {
     pointPosition = transform(pointPosition, d)
     console.log('d:' + d.d)
-    pointWidth = Math.min(Math.max(pointWidth + d.d, 11), 44 * 4)
-    pointHeight = Math.min(Math.max(pointHeight + d.d, 11), 44 * 4)
+    pointWidth = within(pointWidth + d.d, 11, 44 * 4)
+    pointHeight = within(pointHeight + d.d, 11, 44 * 4)
     console.log(pointWidth)
   })
 
