@@ -22,25 +22,38 @@ document.addEventListener( "DOMContentLoaded",function() {
   box.width = box.clientWidth
   box.height = box.clientHeight
 
-  var next = {x:200,y:200,w:44,h:44};
-  var previous = {x:0,y:0,w:0,h:0};
+  var next = {x:0,y:0,w:44,h:44,r:0};
+  var previous = {x:0,y:0,w:0,h:0,r:0};
 
   Multitouch.bind(box, function(d) {
     next.w = within(next.w + d.d, 11, 44 * 4)
     next.h = within(next.h + d.d, 11, 44 * 4)
     next.x = within(next.x + d.x, 0, box.width)
     next.y = within(next.y + d.y, 0, box.height)
+    next.r = next.r + d.r
   })
 
   var ctx = box.getContext("2d");
   ctx.fillStyle="white";
   function render() {
-    ctx.clearRect(previous.x,previous.y,previous.w, previous.h)
-    ctx.fillRect(next.x, next.y, next.w, next.h);
-    previous.x = next.x - 1
-    previous.y = next.y - 1
-    previous.w = next.w + 2
-    previous.h = next.h + 2
+    ctx.translate(previous.x, previous.y)
+    ctx.rotate(previous.r)
+    ctx.clearRect((previous.w / -2) - 1, (previous.h / -2) - 1, previous.w + 2, previous.h + 2)
+    ctx.rotate(-1 * previous.r)
+    ctx.translate(-1 * previous.x, -1 * previous.y)
+
+    ctx.translate(next.x, next.y)
+    ctx.rotate(next.r)
+    ctx.fillRect(next.w / -2, next.h / -2, next.w, next.h);
+    ctx.rotate(-1 * next.r)
+    ctx.translate(-1 * next.x, -1 * next.y)
+
+    previous.x = next.x
+    previous.y = next.y
+    previous.w = next.w
+    previous.h = next.h
+    previous.r = next.r
+
     window.requestAnimFrame(render)
   }
   render()
