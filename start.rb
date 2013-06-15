@@ -6,11 +6,20 @@ get '/' do
   send_file 'index.html'
 end
 
-get '/multitouch.js' do
+def concat(glob)
   s = ""
-  Dir.glob('lib/*.js').each do |f|
+  Dir.glob(glob).each do |f|
     s += File.read(f)
   end
-  content_type 'text/javascript'
   s
+end
+
+get '/multitouch.js' do
+  content_type 'text/javascript'
+  concat 'lib/input/*.js'
+end
+
+get '/demo.js' do
+  content_type 'text/javascript'
+  concat 'lib/demo/*.js'
 end
