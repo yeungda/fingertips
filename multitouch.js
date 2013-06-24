@@ -83,7 +83,13 @@
       var rotation = metrics[1].a - metrics[0].a
       
       diff.d = metrics[1].d - metrics[0].d
-      diff.r = rotation < Math.PI / -2 ?  Math.PI + rotation : rotation
+      if (rotation <= Math.PI / -2) {
+        diff.r = Math.PI + rotation
+      } else if (rotation >= Math.PI / 2) {
+        diff.r = -1 * Math.PI + rotation
+      } else {
+        diff.r = rotation
+      }
 
       diff.originX = (a[0].x + a[1].x) / 2
       diff.originY = (a[0].y + a[1].y) / 2
@@ -291,6 +297,10 @@
              [[[ ],[-1, 1]],
               [[2],[   -2]]],
              {r: Math.PI / 4})
+    diffTest('two fingers the bottom is still, the right from 1.5 o clock to 10.5 o clock',
+             [[[2],[    ],[-2]],
+              [[ ],[-1,1],[  ]]],
+             {r: Math.PI / -2})
 
   })()
 
@@ -357,7 +367,7 @@
       }
     }
 
-    function start(callback) {
+    function start() {
       function simulateInertia() {
         d.x *= (1 - drag)
         d.y *= (1 - drag)
@@ -365,11 +375,11 @@
         d.r *= (1 - drag)
 
         if (!(nearlyZero(d.x) && nearlyZero(d.y) && nearlyZero(d.d) && nearlyZero(d.r))) {
-          callback(d)
+          callback(archive(d))
           inertiaSimulatorId = window.setTimeout(simulateInertia, 1000 / 60)
         }
       }
-      return simulateInertia()
+      simulateInertia()
     }
 
     function handsOn() {
@@ -379,13 +389,13 @@
 
     function letgo() {
       stop()
-      start(callback)
+      start()
     }
 
     function change(diff) {
       stop()
       d = archive(diff)
-      callback(d)
+      callback(archive(d))
     }
     return {
       letgo: letgo,
