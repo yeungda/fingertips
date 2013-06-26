@@ -68,6 +68,47 @@ window.requestAnimFrame = function(){
     }
   }
 })();
+;(function() {
+  window.Demo = window.Demo || {};
+  Demo.Grid = function(maxX, maxY, a) {
+    function minmax(x,min,max) {
+      return Math.max(Math.min(x, max), min)
+    }
+    function toIndex(x, y) {
+      var divisor = 100
+      return [Math.floor(minmax(x,0,maxX) / divisor), Math.floor(minmax(y, 0, maxY) / divisor)]
+    }
+    var maxIndex = toIndex(maxX, maxY)
+    var matrix = new Array(maxIndex[0] + 1)
+    for (var i = 0; i < matrix.length; i++) {
+      matrix[i] = new Array(maxIndex[1] + 1)
+      for (var j = 0; j < matrix[i].length; j++) {
+        matrix[i][j] = []
+      }
+    }
+
+    for (var i = 0; i < a.length; i++) {
+      var poi = a[i]
+      var index = toIndex(poi.x, poi.y)
+      matrix[index[0]][index[1]].push(poi)
+    }
+
+    function find(r) {
+      var minIndex = toIndex(r[0][0], r[0][1])
+      var maxIndex = toIndex(r[1][0], r[1][1])
+      var r = []
+      for (var x = minIndex[0]; x <= maxIndex[0]; x++) {
+        for (var y = minIndex[1]; y <= maxIndex[1]; y++) {
+          r = r.concat(matrix[x][y])
+        }
+      }
+      return r
+    }
+    return {
+      find: find
+    }
+  }
+})();
 document.addEventListener( "DOMContentLoaded",function() {
   var canvas = Demo.Canvas('box', function(w,h) {
     if (viewport) {
@@ -76,7 +117,7 @@ document.addEventListener( "DOMContentLoaded",function() {
     }
   })
 
-  var world = {x: 0, y: 0, w: 3000, h: 3000}
+  var world = {x: 0, y: 0, w: 10000, h: 10000}
 
   var canvasRect = canvas.toRect()
   var viewport = Demo.Viewport({
@@ -94,7 +135,7 @@ document.addEventListener( "DOMContentLoaded",function() {
   function find(canvas, rectangle) {
     var rotation = rectangle.r * -1
     var rotatedRectangle = Transform.rotate(rectangle, rotation)
-    return Demo.Pois.find(Transform.expand(rectangle, 44)).map(function(poi) {
+    return Demo.Pois.find(rectangle).map(function(poi) {
       var result = poi
       var result = Transform.rotate(result, rotation)
       var result = Transform.translate(result, rotatedRectangle.x * -1, rotatedRectangle.y * -1)
@@ -143,19 +184,55 @@ document.addEventListener( "DOMContentLoaded",function() {
     return pois;
   }
 
-  var pois = generate(3000, 3000);
+  var grid = Demo.Grid(10000, 10000, generate(10000, 10000))
   
+  function coveringRectangleOf(rectangle) {
+    var flatR = Transform.rotate(rectangle, rectangle.r * -1)
+    var points = [
+      [flatR.x, flatR.y],
+      [flatR.x + flatR.w, flatR.y],
+      [flatR.x, flatR.y + flatR.h],
+      [flatR.x + flatR.w, flatR.y + flatR.h],
+    ]
+    var rPoints = Transform.rotatePoints(points, rectangle.r)
+    var min = rPoints.reduce(function(result, p) {
+      if (result[0] === null || result[0] > p[0]) {
+        result[0] = p[0]
+      }
+      if (result[1] === null || result[1] > p[1]) {
+        result[1] = p[1]
+      }
+      return result
+    }, [null, null])
+    var max = rPoints.reduce(function(result, p) {
+      if (result[0] === null || result[0] < p[0]) {
+        result[0] = p[0]
+      }
+      if (result[1] === null || result[1] < p[1]) {
+        result[1] = p[1]
+      }
+      return result
+    }, [null, null])
+    return [min, max]
+  }
+
   function find(rectangle) {
     var rotation = rectangle.r * -1
-    var rectangle = Transform.rotate(rectangle, rotation)
+    var flatR = Transform.rotate(rectangle, rotation)
     function between(x, min, max) {
       return x >= min && x <= max
     }
-    return pois.filter(function(poi) {
+    var poisNearRectangle = grid.find(coveringRectangleOf(rectangle))
+    var found = []
+    for (var i = 0; i < poisNearRectangle.length; i++) {
+      var poi = poisNearRectangle[i]
       var rotatedPoi = Transform.rotate(poi, rotation)
-      return between(rotatedPoi.x, rectangle.x, rectangle.x + rectangle.w) && 
-             between(rotatedPoi.y, rectangle.y, rectangle.y + rectangle.h)
-    })
+      if (between(rotatedPoi.x, flatR.x, flatR.x + flatR.w) && 
+             between(rotatedPoi.y, flatR.y, flatR.y + flatR.h)) {
+          found.push(poi)
+      }
+    }
+    return found
   }
   Demo.Pois = {
     find: find
@@ -199,9 +276,17 @@ document.addEventListener( "DOMContentLoaded",function() {
         ctx.translate(poi.x * -1, poi.y * -1)
       }
     }
+
+    function drawDebug() {
+      ctx.font = "14pt Helvetica"
+      ctx.fillStyle = "gray";
+      ctx.fillText('POIs: ' + pois.length,10,30)
+    }
+
     function render() {
       drawLines()
       drawRectangles()
+      drawDebug()
       window.requestAnimFrame(render)
     }
     function setPois(p) {
@@ -215,6 +300,15 @@ document.addEventListener( "DOMContentLoaded",function() {
 })();
 ;(function() {
   Transform = window.Transform || {};
+
+  Transform.rotatePoints = function(points, angle) {
+    return points.map(function(p) {
+      return [
+        p[0] * Math.cos(angle) - p[1] * Math.sin(angle),
+        p[1] * Math.cos(angle) + p[0] * Math.sin(angle)
+      ]
+    })
+  }
   Transform.rotate = function(r, a) {
     return {
       x: r.x * Math.cos(a) - r.y * Math.sin(a),
