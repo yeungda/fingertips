@@ -168,16 +168,17 @@ document.addEventListener( "DOMContentLoaded",function() {
   window.Demo = window.Demo || {};
 
   function generate(width, height) {
-    function randomGray() {
-      var shade = Math.floor((Math.random() * 85) + 170).toString(16)
+    function grayFor(z) {
+      var shade = Math.floor((z * 8) + 175).toString(16)
       return "#" + shade + shade + shade
     }
     var space = 22 * 3
     var pois = []
     for (var x = 0; x < width; x += space) {
       for (var y = 0; y < height; y += space) {
+        var z = Math.round(Math.random() * 10)
         pois.push({
-          x: x + (Math.random() * space), y: y + (Math.random() * space), w: 22, h: 22, c: randomGray(), r: 0
+          x: x + (Math.random() * space), y: y + (Math.random() * space), w: 12 * (z / 2), h: 12 * (z / 2), c: grayFor(z), r: 0, z: z
         })
       }
     }
@@ -229,7 +230,10 @@ document.addEventListener( "DOMContentLoaded",function() {
       var rotatedPoi = Transform.rotate(poi, rotation)
       if (between(rotatedPoi.x, flatR.x, flatR.x + flatR.w) && 
              between(rotatedPoi.y, flatR.y, flatR.y + flatR.h)) {
-          found.push(poi)
+          var z = rectangle.w / document.width * 1.5
+          if (poi.z >= Math.min(z, 9)) {
+            found.push(poi)
+          }
       }
     }
     return found
@@ -244,7 +248,7 @@ document.addEventListener( "DOMContentLoaded",function() {
     var pois = {}
     var ctx = canvas.getContext("2d");
     function drawLines() {
-      if (pois.length < 600) {
+      if (pois.length < 150) {
         var l = null, r = null;
         ctx.beginPath();
         for (var i = 0; i < pois.length; i++) {
@@ -256,16 +260,13 @@ document.addEventListener( "DOMContentLoaded",function() {
             ctx.moveTo(r.x, r.y);
           }
         }
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = 'rgba(153,153,153,.1)';
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'rgb(233,233,233)';
         ctx.stroke();
         ctx.moveTo(0,0);
       }
     }
     function drawRectangles() {
-      ctx.fillStyle = "rgba(230,255,230,0.4)";
-      //ctx.fillStyle = "white";
-      ctx.fillRect(0,0,canvas.width,canvas.height)
       for (var i = 0; i < pois.length; i++) {
         var poi = pois[i]
         ctx.fillStyle = poi.c;
@@ -283,7 +284,13 @@ document.addEventListener( "DOMContentLoaded",function() {
       ctx.fillText('POIs: ' + pois.length,10,30)
     }
 
+    function clear() {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0,0,canvas.width,canvas.height)
+    }
+
     function render() {
+      clear()
       drawLines()
       drawRectangles()
       drawDebug()
