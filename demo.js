@@ -287,10 +287,14 @@ document.addEventListener( "DOMContentLoaded",function() {
       drawLines()
       drawRectangles()
       drawDebug()
-      window.requestAnimFrame(render)
+      pois = null
     }
     function setPois(p) {
+      var needsRedraw = pois == null
       pois = p
+      if (needsRedraw) {
+        window.requestAnimFrame(render)
+      }
     }
     return {
       render: render,
